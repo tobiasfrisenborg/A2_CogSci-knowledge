@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(brms, rethinking)
 ```
 
 ## In this assignment we learn how to assess rates from a binomial distribution, using the case of assessing your teachers' knowledge of CogSci
@@ -35,11 +37,124 @@ Questions:
 - Then implement a quadratic approximation (hint check paragraph 2.4.2!).
 - N.B. for the rest of the exercise just keep using the grid approximation (we'll move to quadratic approximations in two classes)
 
+``` {r 1a grid approximation}
+### Implement grid apporximation
+# define density (number of points)
+dens <- 20
+
+# define grid
+p_grid <- seq(from = 0, to = 1, length.out = dens)
+
+# define prior
+prior <- rep(1, dens)
+# prior <- ifelse(p_grid < 0.5 , 0 , 1) # UnreasonablyOptimisticPrior
+# prior <- dnorm(p_grid, 0.5, 0.1) # SensiblyCenteredAtChance
+
+# test the prior - does it look crazy?
+dens(rbinom(1e4, 6, runif(1e4, 0, 1)))
+#dens(rbinom(1e4, 6, runif(1e4, 0.5, 1)))
+#dens(rbinom(1e4, 6, rnorm(1e4, 0.5, 0.1))) 
+
+# compute likelihood at each value in grid
+likelihood <- dbinom(3, size = 6, prob = p_grid)
+
+# compute product of likelihood and prior
+unstd.posterior <- likelihood * prior
+
+# standardize the posterior, so it sums to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+# plot
+plot(p_grid, posterior,
+     type = "b",
+     xlab = "probability of water",
+     ylab = "posterior probability")
+
+# draw 10000 samples from the posterior
+samples <- sample(p_grid ,prob=posterior ,size = 1e4 ,replace = TRUE)
+
+# we can plot the samples
+plot(samples)
+dens(samples)
+
+# add up posterior probability where p < 0.5
+sum(posterior[p_grid < 0.5])
+
+```
+
+``` {r 1b quadratic approximations}
+
+globe.qa <- map(
+  alist(
+    w ~ dbinom(6,p) , # binomial likelihood
+    p ~ dunif(0,1) # uniform prior
+    ),
+  data=list(w=3) )
+
+# display summary of quadratic approximation
+precis( globe.qa )
+
+# analytical calculation 2.7
+w <- 3
+n <- 6
+curve( dbeta( x , w+1 , n-w+1 ) , from=0 , to=1 )
+# quadratic approximation
+curve( dnorm( x , 0.5 , 0.2 ) , lty=2 , add=TRUE )
+
+```
+
 2. Estimate all the teachers' knowledge of CogSci. Who's best? Use grid approximation. Comment on the posteriors of Riccardo and Mikkel.
 2a. Produce plots of the prior, and posterior for each teacher.
 
+``` {r}
+
+grid_approx <- function(correct, total) {
+  ## Kristian
+  dens <- 20
+  p_grid <- seq(from = 0, to = 1, length.out = dens)
+  prior <- rep(1, dens)
+  dens(rbinom(1e4, total, runif(1e4, 0, 1)))
+  likelihood <- dbinom(correct, size = total, prob = p_grid)
+  unstd.posterior <- likelihood * prior
+  posterior <- unstd.posterior / sum(unstd.posterior)
+  # plot
+  plot(p_grid, posterior,
+       type = "b",
+       xlab = "probability of water",
+       ylab = "posterior probability")
+  
+  sum(posterior[p_grid > 0.5])
+}
+
+## Kristian (2/2)
+grid_approx(2, 2)
+
+# Josh (160 / 198)
+grid_approx(160, 198)
+
+# Mikkel (66 / 132)
+grid_approx(66, 132)
+
+
+
+
+
+
+
+
+
+
+
+```
+
 3. Change the prior. Given your teachers have all CogSci jobs, you should start with a higher appreciation of their knowledge: the prior is a normal distribution with a mean of 0.8 and a standard deviation of 0.2. Do the results change (and if so how)?
 3a. Produce plots of the prior and posterior for each teacher.
+
+``` {r 3a}
+
+
+
+```
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
