@@ -1,6 +1,6 @@
 ---
 title: "Computational Modeling - Assignment 2"
-author: "Riccardo Fusaroli"
+author: "Josephine, Mie and Tobias"
 date: "29/01/2019"
 output: html_document
 ---
@@ -152,6 +152,7 @@ grid_approx(66, 132)
 
 ``` {r 3a}
 
+# prior <- dnorm(p_grid, 0.8, 0.2) # SensiblyCenteredAtChance ?
 
 
 ```
