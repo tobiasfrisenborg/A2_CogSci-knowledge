@@ -104,6 +104,9 @@ grid_approx <- function(correct, total, teacher_name) {
        ylab = "Posterior probability")
 }
 
+## Riccardo (3/6)
+grid_approx(3, 6, "Riccardo")
+
 ## Kristian (2/2)
 grid_approx(2, 2, "Kristian")
 
@@ -114,6 +117,10 @@ grid_approx(160, 198, "Josh")
 grid_approx(66, 132, "Mikkel")
 
 ```
+
+The posteriors of Riccardo and Mikkel are both centered around the mean of 0.5. However, as Mikkel have answered more questions, we are more certain that his actual knowledge of cogsci is around 0.5.
+
+
 
 3. Change the prior. Given your teachers have all CogSci jobs, you should start with a higher appreciation of their knowledge: the prior is a normal distribution with a mean of 0.8 and a standard deviation of 0.2. Do the results change (and if so how)?
 3a. Produce plots of the prior and posterior for each teacher.
@@ -150,6 +157,10 @@ grid_approx(66, 132, "Mikkel")
 
 
 ```
+
+The results change, especially for Riccardo and Kristian because they have so few datapoints. This has the effect that the priors make a larger difference.
+
+
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
