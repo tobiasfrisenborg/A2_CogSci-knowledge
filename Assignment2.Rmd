@@ -38,68 +38,47 @@ Questions:
 - N.B. for the rest of the exercise just keep using the grid approximation (we'll move to quadratic approximations in two classes)
 
 ``` {r 1a grid approximation}
+
 ### Implement grid apporximation
-# define density (number of points)
-dens <- 20
+dens <- 20  # define density (number of points to calculate)
+p_grid <- seq(from = 0, to = 1, length.out = dens)  # define grid
+prior <- rep(1, dens)  # define prior
+dens(rbinom(1e4, 6, runif(1e4, 0, 1)))  # test the prior, it looks reasonable
+likelihood <- dbinom(3, size = 6, prob = p_grid)  # compute likelihood at each value in grid
+unstd.posterior <- likelihood * prior  # compute product of likelihood and prio
+posterior <- unstd.posterior / sum(unstd.posterior)  # standardize the posterior, so it sums to 1 - this is equivalent to bayes theorem
 
-# define grid
-p_grid <- seq(from = 0, to = 1, length.out = dens)
-
-# define prior
-prior <- rep(1, dens)
-# prior <- ifelse(p_grid < 0.5 , 0 , 1) # UnreasonablyOptimisticPrior
-# prior <- dnorm(p_grid, 0.5, 0.1) # SensiblyCenteredAtChance
-
-# test the prior - does it look crazy?
-dens(rbinom(1e4, 6, runif(1e4, 0, 1)))
-#dens(rbinom(1e4, 6, runif(1e4, 0.5, 1)))
-#dens(rbinom(1e4, 6, rnorm(1e4, 0.5, 0.1))) 
-
-# compute likelihood at each value in grid
-likelihood <- dbinom(3, size = 6, prob = p_grid)
-
-# compute product of likelihood and prior
-unstd.posterior <- likelihood * prior
-
-# standardize the posterior, so it sums to 1
-posterior <- unstd.posterior / sum(unstd.posterior)
-
-# plot
+# plot the posterior probability
 plot(p_grid, posterior,
      type = "b",
-     xlab = "probability of water",
-     ylab = "posterior probability")
+     xlab = "Probability of cogsci knowledge",
+     ylab = "Posterior probability")
 
-# draw 10000 samples from the posterior
-samples <- sample(p_grid ,prob=posterior ,size = 1e4 ,replace = TRUE)
-
-# we can plot the samples
-plot(samples)
-dens(samples)
-
-# add up posterior probability where p < 0.5
+# add up posterior probability where p < 0.5, this is equivalent to calculating the probability that Riccardo's knowledge is above chance
 sum(posterior[p_grid < 0.5])
 
 ```
 
 ``` {r 1b quadratic approximations}
 
-globe.qa <- map(
+### Implement quadratic apporximation
+cogsci_qa <- map(
   alist(
-    w ~ dbinom(6,p) , # binomial likelihood
-    p ~ dunif(0,1) # uniform prior
-    ),
-  data=list(w=3) )
+    w ~ dbinom(6,p), # binomial distribution
+    p ~ dunif(0,1)),  # uniform prior
+  data = list(w = 3))
 
 # display summary of quadratic approximation
-precis( globe.qa )
+precis(cogsci_qa)
 
-# analytical calculation 2.7
+# specify the results
 w <- 3
 n <- 6
-curve( dbeta( x , w+1 , n-w+1 ) , from=0 , to=1 )
-# quadratic approximation
-curve( dnorm( x , 0.5 , 0.2 ) , lty=2 , add=TRUE )
+
+# plot the actual distribution
+curve(dbeta(x, w + 1, n - w + 1), from = 0 , to = 1)
+# plot the quadratic approximation
+curve(dnorm(x, 0.5, 0.2), lty = 2, add = TRUE)
 
 ```
 
@@ -108,42 +87,31 @@ curve( dnorm( x , 0.5 , 0.2 ) , lty=2 , add=TRUE )
 
 ``` {r}
 
-grid_approx <- function(correct, total) {
-  ## Kristian
+# Define function to plot grid approximation 
+grid_approx <- function(correct, total, teacher_name) {
+  # specifications (same as in Q.1a)
   dens <- 20
   p_grid <- seq(from = 0, to = 1, length.out = dens)
   prior <- rep(1, dens)
-  dens(rbinom(1e4, total, runif(1e4, 0, 1)))
   likelihood <- dbinom(correct, size = total, prob = p_grid)
   unstd.posterior <- likelihood * prior
   posterior <- unstd.posterior / sum(unstd.posterior)
   # plot
   plot(p_grid, posterior,
+       main = paste("Teacher: ", teacher_name),
        type = "b",
-       xlab = "probability of water",
-       ylab = "posterior probability")
-  
-  sum(posterior[p_grid > 0.5])
+       xlab = "Probability of cogsci knowledge",
+       ylab = "Posterior probability")
 }
 
 ## Kristian (2/2)
-grid_approx(2, 2)
+grid_approx(2, 2, "Kristian")
 
 # Josh (160 / 198)
-grid_approx(160, 198)
+grid_approx(160, 198, "Josh")
 
 # Mikkel (66 / 132)
-grid_approx(66, 132)
-
-
-
-
-
-
-
-
-
-
+grid_approx(66, 132, "Mikkel")
 
 ```
 
@@ -152,14 +120,101 @@ grid_approx(66, 132)
 
 ``` {r 3a}
 
-# prior <- dnorm(p_grid, 0.8, 0.2) # SensiblyCenteredAtChance ?
+grid_approx <- function(correct, total, teacher_name) {
+  # specifications, almost the same as previous question
+  dens <- 100
+  p_grid <- seq(from = 0, to = 1, length.out = dens)
+  prior <- dnorm(p_grid, 0.8, 0.2) # this is the change - normal distribution with mean of 0.8 and 0.2 sd
+  likelihood <- dbinom(correct, size = total, prob = p_grid)
+  unstd.posterior <- likelihood * prior
+  posterior <- unstd.posterior / sum(unstd.posterior)
+  # plot
+  plot(p_grid, posterior,
+       main = paste("Teacher: ", teacher_name),
+       type = "b",
+       xlab = "Probability of cogsci knowledge",
+       ylab = "Posterior probability")
+}
+
+# Riccardo (3 / 6)
+grid_approx(3, 6, "Riccardo")
+
+## Kristian (2/2)
+grid_approx(2, 2, "Kristian")
+
+# Josh (160 / 198)
+grid_approx(160, 198, "Josh")
+
+# Mikkel (66 / 132)
+grid_approx(66, 132, "Mikkel")
 
 
 ```
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
+``` {r 4}
+
+grid_approx <- function(correct, total, teacher_name) {
+  # specifications
+  correct <- correct * 100 # multiply by a 100
+  total <- total * 100
+  dens <- 100  # change density to get a bit better estimates
+  p_grid <- seq(from = 0, to = 1, length.out = dens)
+  
+  # uniform prior
+  prior <- rep(1, dens)  # uniform prior
+  likelihood <- dbinom(correct, size = total, prob = p_grid)
+  unstd.posterior <- likelihood * prior
+  posterior <- unstd.posterior / sum(unstd.posterior)
+  # plot
+  plot(p_grid, posterior,
+       main = paste("Teacher: ", teacher_name),
+       sub = "Uniform prior",
+       type = "b",
+       xlab = "Probability of cogsci knowledge",
+       ylab = "posterior probability")
+  
+  # normal prior
+  prior <- dnorm(p_grid, 0.8, 0.2)  # normal prior with a mean of 0.8 and sd 0f 0.2
+  likelihood <- dbinom(correct, size = total, prob = p_grid)
+  unstd.posterior <- likelihood * prior
+  posterior <- unstd.posterior / sum(unstd.posterior)
+  # plot
+  plot(p_grid, posterior,
+       main = paste("Teacher: ", teacher_name),
+       sub = "Normal Prior",
+       type = "b",
+       xlab = "Probability of cogsci knowledge",
+       ylab = "Posterior probability")
+}
+
+# Riccardo (3 / 6)
+grid_approx(3, 6, "Riccardo")
+
+## Kristian (2/2)
+grid_approx(2, 2, "Kristian")
+
+# Josh (160 / 198)
+grid_approx(160, 198, "Josh")
+
+# Mikkel (66 / 132)
+grid_approx(66, 132, "Mikkel")
+
+
+```
+
+We now have enough datapoints to be fairly sure about the teachers true knowledge of cogsci so the priors make less of a difference now.
+
+
+
 5. Imagine you're a skeptic and think your teachers do not know anything about CogSci, given the content of their classes. How would you operationalize that belief?
+
+If we assume the teachers know nothing, it would be reasonable to define the prior to neglect all data points above .5, so that we are entirely sure that there is no chance that a teacher is above .5 level. The code would look as follows:
+# prior <- ifelse(p_grid > 0.5 , 0 , 1)
+
+
+
 
 6. Optional question: Can you estimate the difference between Riccardo's estimated knowledge and that of each of the other teachers? Would you deem it credible (that is, would you believe that it is actually different)?
 
