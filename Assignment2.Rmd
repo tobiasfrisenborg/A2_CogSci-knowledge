@@ -7,8 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library("pacman")
 
-library(brms, rethinking)
+p_load(brms, rethinking, tidyverse)
+
 ```
 
 ## In this assignment we learn how to assess rates from a binomial distribution, using the case of assessing your teachers' knowledge of CogSci
@@ -55,14 +57,16 @@ plot(p_grid, posterior,
      ylab = "Posterior probability")
 
 # add up posterior probability where p < 0.5, this is equivalent to calculating the probability that Riccardo's knowledge is above chance
-sum(posterior[p_grid < 0.5])
+sum(posterior[p_grid > 0.5])
+
+# there is a 50% chance that he has 
 
 ```
 
 ``` {r 1b quadratic approximations}
 
 ### Implement quadratic apporximation
-cogsci_qa <- map(
+cogsci_qa <- rethinking::map(
   alist(
     w ~ dbinom(6,p), # binomial distribution
     p ~ dunif(0,1)),  # uniform prior
@@ -79,144 +83,166 @@ n <- 6
 curve(dbeta(x, w + 1, n - w + 1), from = 0 , to = 1)
 # plot the quadratic approximation
 curve(dnorm(x, 0.5, 0.2), lty = 2, add = TRUE)
-
 ```
+
+So from the plots and calculations seen above, we calculate that Riccardo has a 50% chance of having knowledge above chance (assuming that the questions is binary, and therefore chance will be at 50%).
+The results are the same for both quadratic approximation and the grid approximation.
 
 2. Estimate all the teachers' knowledge of CogSci. Who's best? Use grid approximation. Comment on the posteriors of Riccardo and Mikkel.
 2a. Produce plots of the prior, and posterior for each teacher.
 
-``` {r}
+```{r functions}
 
-# Define function to plot grid approximation 
-grid_approx <- function(correct, total, teacher_name) {
-  # specifications (same as in Q.1a)
-  dens <- 20
-  p_grid <- seq(from = 0, to = 1, length.out = dens)
-  prior <- rep(1, dens)
-  likelihood <- dbinom(correct, size = total, prob = p_grid)
-  unstd.posterior <- likelihood * prior
-  posterior <- unstd.posterior / sum(unstd.posterior)
-  # plot
-  plot(p_grid, posterior,
-       main = paste("Teacher: ", teacher_name),
-       type = "b",
-       xlab = "Probability of cogsci knowledge",
-       ylab = "Posterior probability")
+#Creating functions
+
+calc_teacher <- function(n_correct, n_question, prior, length_out = 100){
+  # this function calculate the posterior
+  p_grid <- seq(from = 0, to = 1, length.out = length_out)
+  likelihood <- dbinom(n_correct, 
+                       size = n_question, 
+                       prob = p_grid)
+  unstd_posterior <- prior * likelihood
+  bin_size <- abs(p_grid[1] - p_grid[2])
+  posterior <- unstd_posterior/sum(unstd_posterior * bin_size)
+  return(list(teacher_posterior = posterior, 
+              likelihood = likelihood,
+              grid = p_grid))
 }
 
+pretty_plot <- function(p_grid, prior, likelihood, posterior, title = " "){
+  # define data
+  d <- tibble(p_grid = p_grid, 
+              prior = prior, 
+              likelihood = likelihood,
+              posterior = posterior)
+  
+  # make to long format
+  d <- d %>% 
+    pivot_longer(cols = c("prior", "likelihood", "posterior"), names_to = "name", values_to = "value")
+  
+  # make a 
+  p <- ggplot(d, aes(x = p_grid, y = value, color = name)) + 
+    geom_line() + 
+    labs(x = "x", y = "Density", title = title) + 
+    theme_bw() + 
+    ggplot2::theme(panel.background = element_rect(fill = "white"),
+                   panel.border = element_blank()) +
+    scale_colour_brewer(palette = "Dark2", direction = 1)
+  return(p)
+}
+```
+
+``` {r}
+
+#Creating a uniform prior
+uniform_prior <- rep(1, 100)
+
 ## Riccardo (3/6)
-grid_approx(3, 6, "Riccardo")
+Riccardo <- calc_teacher(3,6, uniform_prior)
+pretty_plot(Riccardo$grid, uniform_prior, Riccardo$likelihood, Riccardo$teacher_posterior, title = "Riccardo")
+
 
 ## Kristian (2/2)
-grid_approx(2, 2, "Kristian")
+Kristian <- calc_teacher(2,2, uniform_prior)
+pretty_plot(Kristian$grid, uniform_prior, Kristian$likelihood, Kristian$teacher_posterior, title = "Kristian")
+
 
 # Josh (160 / 198)
-grid_approx(160, 198, "Josh")
+Josh <- calc_teacher(160,198, uniform_prior)
+pretty_plot(Josh$grid, uniform_prior, Josh$likelihood, Josh$teacher_posterior, title = "Josh")
+
 
 # Mikkel (66 / 132)
-grid_approx(66, 132, "Mikkel")
+Mikkel <- calc_teacher(66,132, uniform_prior)
+pretty_plot(Mikkel$grid, uniform_prior, Mikkel$likelihood, Mikkel$teacher_posterior, title = "Mikkel")
 
 ```
 
 The posteriors of Riccardo and Mikkel are both centered around the mean of 0.5. However, as Mikkel have answered more questions, we are more certain that his actual knowledge of cogsci is around 0.5.
+
+Regarding the question of who is best, it is depending on what you look at. If we look at who has answered the biggest procentage correct Kristian is the best, but when concerned with the small amout of data we will argue that Josh is the best since we have more answers, there is a bigger probability that it represents Joshs true knowledge. 
 
 
 
 3. Change the prior. Given your teachers have all CogSci jobs, you should start with a higher appreciation of their knowledge: the prior is a normal distribution with a mean of 0.8 and a standard deviation of 0.2. Do the results change (and if so how)?
 3a. Produce plots of the prior and posterior for each teacher.
 
+
 ``` {r 3a}
 
-grid_approx <- function(correct, total, teacher_name) {
-  # specifications, almost the same as previous question
-  dens <- 100
-  p_grid <- seq(from = 0, to = 1, length.out = dens)
-  prior <- dnorm(p_grid, 0.8, 0.2) # this is the change - normal distribution with mean of 0.8 and 0.2 sd
-  likelihood <- dbinom(correct, size = total, prob = p_grid)
-  unstd.posterior <- likelihood * prior
-  posterior <- unstd.posterior / sum(unstd.posterior)
-  # plot
-  plot(p_grid, posterior,
-       main = paste("Teacher: ", teacher_name),
-       type = "b",
-       xlab = "Probability of cogsci knowledge",
-       ylab = "Posterior probability")
-}
+#creating a new prior 
+
+p_grid <- seq(from = 0, to = 1, length.out = 100)
+sensibly_centered_at_0.8 <- dnorm(p_grid, 0.8, 0.2)
 
 # Riccardo (3 / 6)
-grid_approx(3, 6, "Riccardo")
+Riccardo_0.8<- calc_teacher(3,6,sensibly_centered_at_0.8)
+pretty_plot(Riccardo_0.8$grid, sensibly_centered_at_0.8, Riccardo_0.8$likelihood, Riccardo_0.8$teacher_posterior, title = "Riccardo")
+
 
 ## Kristian (2/2)
-grid_approx(2, 2, "Kristian")
+Kristian_0.8<- calc_teacher(2,2,sensibly_centered_at_0.8)
+pretty_plot(Kristian_0.8$grid, sensibly_centered_at_0.8, Kristian_0.8$likelihood, Kristian_0.8$teacher_posterior, title = "Kristian")
+
 
 # Josh (160 / 198)
-grid_approx(160, 198, "Josh")
+Josh_0.8<- calc_teacher(160,198,sensibly_centered_at_0.8)
+pretty_plot(Josh_0.8$grid, sensibly_centered_at_0.8, Josh_0.8$likelihood, Josh_0.8$teacher_posterior, title = "Josh")
+
 
 # Mikkel (66 / 132)
-grid_approx(66, 132, "Mikkel")
+Mikkel_0.8<- calc_teacher(66,132,sensibly_centered_at_0.8)
+pretty_plot(Mikkel_0.8$grid, sensibly_centered_at_0.8, Mikkel_0.8$likelihood, Mikkel_0.8$teacher_posterior, title = "Mikkel")
 
 
 ```
 
-The results change, especially for Riccardo and Kristian because they have so few datapoints. This has the effect that the priors make a larger difference.
+The results change for all teachers. However, the degree of change varies due to amount of datapoints. Before, we saw that Mikkel and Riccardo had the same probability of knowledge but since Riccardo has fewer datapoints his posterior probability is more susceptable to change because of the prior. In this case it increases his posterior probability in a higher degree than Mikkel. The same applies to Kristian, again due to few datapoints. Josh's results are pretty consistent which seems intuitive since he answered more questions.
 
 
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
 ``` {r 4}
+# Riccardo (300 / 600)
+Riccardo <- calc_teacher(300,600, uniform_prior)
+pretty_plot(Riccardo$grid, uniform_prior, Riccardo$likelihood, Riccardo$teacher_posterior, title = "Riccardo uniform")
 
-grid_approx <- function(correct, total, teacher_name) {
-  # specifications
-  correct <- correct * 100 # multiply by a 100
-  total <- total * 100
-  dens <- 100  # change density to get a bit better estimates
-  p_grid <- seq(from = 0, to = 1, length.out = dens)
-  
-  # uniform prior
-  prior <- rep(1, dens)  # uniform prior
-  likelihood <- dbinom(correct, size = total, prob = p_grid)
-  unstd.posterior <- likelihood * prior
-  posterior <- unstd.posterior / sum(unstd.posterior)
-  # plot
-  plot(p_grid, posterior,
-       main = paste("Teacher: ", teacher_name),
-       sub = "Uniform prior",
-       type = "b",
-       xlab = "Probability of cogsci knowledge",
-       ylab = "posterior probability")
-  
-  # normal prior
-  prior <- dnorm(p_grid, 0.8, 0.2)  # normal prior with a mean of 0.8 and sd 0f 0.2
-  likelihood <- dbinom(correct, size = total, prob = p_grid)
-  unstd.posterior <- likelihood * prior
-  posterior <- unstd.posterior / sum(unstd.posterior)
-  # plot
-  plot(p_grid, posterior,
-       main = paste("Teacher: ", teacher_name),
-       sub = "Normal Prior",
-       type = "b",
-       xlab = "Probability of cogsci knowledge",
-       ylab = "Posterior probability")
-}
+Riccardo_0.8<- calc_teacher(300,600,sensibly_centered_at_0.8)
+pretty_plot(Riccardo_0.8$grid, sensibly_centered_at_0.8, Riccardo_0.8$likelihood, Riccardo_0.8$teacher_posterior, title = "Riccardo sensible")
 
-# Riccardo (3 / 6)
-grid_approx(3, 6, "Riccardo")
 
-## Kristian (2/2)
-grid_approx(2, 2, "Kristian")
 
-# Josh (160 / 198)
-grid_approx(160, 198, "Josh")
+## Kristian (200/200)
+Kristian <- calc_teacher(200,200, uniform_prior)
+pretty_plot(Kristian$grid, uniform_prior, Kristian$likelihood, Kristian$teacher_posterior, title = "Kristian uniform")
 
-# Mikkel (66 / 132)
-grid_approx(66, 132, "Mikkel")
+Kristian_0.8<- calc_teacher(200,200,sensibly_centered_at_0.8)
+pretty_plot(Kristian_0.8$grid, sensibly_centered_at_0.8, Kristian_0.8$likelihood, Kristian_0.8$teacher_posterior, title = "Kristian sensible")
+
+
+
+# Josh (16000 / 19800)
+Josh <- calc_teacher(16000,19800, uniform_prior)
+pretty_plot(Josh$grid, uniform_prior, Josh$likelihood, Josh$teacher_posterior, title = "Josh uniform")
+
+Josh_0.8<- calc_teacher(16000,19800,sensibly_centered_at_0.8)
+pretty_plot(Josh_0.8$grid, sensibly_centered_at_0.8, Josh_0.8$likelihood, Josh_0.8$teacher_posterior, title = "Josh sensible")
+
+
+
+# Mikkel (6600 / 13200)
+Mikkel <- calc_teacher(6600,13200, uniform_prior)
+pretty_plot(Mikkel$grid, uniform_prior, Mikkel$likelihood, Mikkel$teacher_posterior, title = "Mikkel uniform")
+
+Mikkel_0.8<- calc_teacher(6600,13200,sensibly_centered_at_0.8)
+pretty_plot(Mikkel_0.8$grid, sensibly_centered_at_0.8, Mikkel_0.8$likelihood, Mikkel_0.8$teacher_posterior, title = "Mikkel sensible")
 
 
 ```
 
-We now have enough datapoints to be fairly sure about the teachers true knowledge of cogsci so the priors make less of a difference now.
-
+Do you still see a difference between the results? Why?
+Yes, we do see some changes, however the distribution is less affected by the prior then previously (almost impossible to see in the data from Kristian and Josh). We also see that the distribution of the teachers who are further away from the assumed prior of 0.8 (Mikkel and Riccardo) are more influenced by the prior.
 
 
 5. Imagine you're a skeptic and think your teachers do not know anything about CogSci, given the content of their classes. How would you operationalize that belief?
@@ -304,6 +330,21 @@ Last year you assessed the teachers (darned time runs quick!). Now you want to r
 
 Questions to be answered (but see guidance below):
 1- Write a paragraph discussing how assessment of prediction performance is different in Bayesian vs. frequentist models
+
+In frequentist models you could use a t-test and get a p-value telling you whether or not the means are significantly different from each other. In Bayesian models you instead get the estimate of how likely it is that the model has learned something. For this, we could calculate a new posterior using the previous posterior as the new prior.
+
+
+
+
+
+Could use HDPI and MAP (only get the highest point and that you're wrong and not how you're wrong) or the credibility interval or the mean and SD.
+the ones we will do: 
+1 using the information from previous years and see the difference 
+2 using post2020 - MAP(post2019)
+
+The information above 0 is the chance of him haing learned somthing, below is that he has forgotten somthing, done worse then last time.
+Sum(post2019[])
+
 2- Provide at least one plot and one written line discussing prediction errors for each of the teachers.
 
 This is the old data:
@@ -324,4 +365,32 @@ Guidance Tips
 2. Last year's results are this year's expectations.
 3. Are the parameter estimates changing? (way 1)
 4. How does the new data look in last year's predictive posterior? (way 2)
+
+```{r}
+#1 using the information from previous years and see the difference 
+
+#Riccardo
+Riccardo_2020 <- calc_teacher(9,10,Riccardo_0.8$teacher_posterior)
+pretty_plot(Riccardo_2020$grid, Riccardo_0.8$teacher_posterior, Riccardo_2020$likelihood, Riccardo_2020$teacher_posterior, title = "Riccardo")
+
+
+#Kristian
+Kristian_2020 <- calc_teacher(8,12,Kristian_0.8$teacher_posterior)
+pretty_plot(Kristian_2020$grid, Kristian_0.8$teacher_posterior, Kristian_2020$likelihood, Kristian_2020$teacher_posterior, title = "Kristian")
+
+
+#Josh
+Josh_2020 <- calc_teacher(148,172,Josh_0.8$teacher_posterior)
+pretty_plot(Josh_2020$grid, Josh_0.8$teacher_posterior, Josh_2020$likelihood, Josh_2020$teacher_posterior, title = "Josh")
+
+
+#Mikkel
+Mikkel_2020 <- calc_teacher(34,65,Riccardo_0.8$teacher_posterior)
+pretty_plot(Mikkel_2020$grid, Mikkel_0.8$teacher_posterior, Mikkel_2020$likelihood, Mikkel_2020$teacher_posterior, title = "Mikkel")
+
+
+#2 using post2020 - MAP(post2019)
+
+```
+
 
