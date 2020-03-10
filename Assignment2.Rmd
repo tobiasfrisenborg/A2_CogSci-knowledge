@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library("pacman")
+library(pacman)
 
 p_load(brms, rethinking, tidyverse)
 
@@ -189,7 +189,6 @@ Regarding the question of who is best, it is depending on what you look at. If w
 
 
 ``` {r 3a}
-
 #creating a new prior 
 
 p_grid <- seq(from = 0, to = 1, length.out = 100)
@@ -387,32 +386,54 @@ Guidance Tips
 4. How does the new data look in last year's predictive posterior? (way 2)
 
 ```{r}
+# New function for plotting old posterior and new posterior
+posterior_plot <- function(p_grid, prior, posterior, title = " "){
+  # define data
+  d <- tibble(p_grid = p_grid, 
+              old_posterior = prior, 
+              new_posterior = posterior)
+  
+  # make to long format
+  d <- d %>% 
+    pivot_longer(cols = c("old_posterior", "new_posterior"), names_to = "name", values_to = "value")
+  
+  # make a 
+  p <- ggplot(d, aes(x = p_grid, y = value, color = name)) + 
+    geom_line() + 
+    labs(x = "x", y = "Density", title = title) + 
+    theme_bw() + 
+    ggplot2::theme(panel.background = element_rect(fill = "white"),
+                   panel.border = element_blank()) +
+    scale_colour_brewer(palette = "Dark2", direction = 1)
+  return(p)
+}
+
 #1 using the information from previous years and see the difference 
 
 #Riccardo
 Riccardo_2020 <- calc_teacher(9,10,Riccardo_0.8$teacher_posterior)
-pretty_plot(Riccardo_2020$grid, Riccardo_0.8$teacher_posterior, Riccardo_2020$likelihood, Riccardo_2020$teacher_posterior, title = "Riccardo")
+posterior_plot(Riccardo_2020$grid, Riccardo_0.8$teacher_posterior, Riccardo_2020$teacher_posterior, title = "Updated posterior for Riccardo")
 
 subtract_plot(Riccardo_2020$teacher_posterior- Riccardo_0.8$teacher_posterior, "Riccardo")
 
 #Kristian
 Kristian_2020 <- calc_teacher(8,12,Kristian_0.8$teacher_posterior)
-pretty_plot(Kristian_2020$grid, Kristian_0.8$teacher_posterior, Kristian_2020$likelihood, Kristian_2020$teacher_posterior, title = "Kristian")
+posterior_plot(Kristian_2020$grid, Kristian_0.8$teacher_posterior, Kristian_2020$teacher_posterior, title = "Updated posterior for Kristian")
 
 subtract_plot(Kristian_2020$teacher_posterior- Kristian_0.8$teacher_posterior, "Kristian")
 
 #Josh
 Josh_2020 <- calc_teacher(148,172,Josh_0.8$teacher_posterior)
-pretty_plot(Josh_2020$grid, Josh_0.8$teacher_posterior, Josh_2020$likelihood, Josh_2020$teacher_posterior, title = "Josh")
+posterior_plot(Josh_2020$grid, Josh_0.8$teacher_posterior, Josh_2020$teacher_posterior, title = "Updated posterior for Josh")
 
 subtract_plot(Josh_2020$teacher_posterior- Josh_0.8$teacher_posterior, "Josh")
 
 
 #Mikkel
 Mikkel_2020 <- calc_teacher(34,65,Mikkel_0.8$teacher_posterior)
-pretty_plot(Mikkel_2020$grid, Mikkel_0.8$teacher_posterior, Mikkel_2020$likelihood, Mikkel_2020$teacher_posterior, title = "Mikkel")
+posterior_plot(Mikkel_2020$grid, Mikkel_0.8$teacher_posterior, Mikkel_2020$teacher_posterior, title = "Updated posterior for Mikkel")
 
-subtract_plot(Mikkel_2020$teacher_posterior- Mikkel_0.8$teacher_posterior, "Mikkel")
+subtract_plot(Mikkel_2020$teacher_posterior - Mikkel_0.8$teacher_posterior, "Mikkel")
 ```
 
 
