@@ -59,8 +59,6 @@ plot(p_grid, posterior,
 # add up posterior probability where p < 0.5, this is equivalent to calculating the probability that Riccardo's knowledge is above chance
 sum(posterior[p_grid > 0.5])
 
-# there is a 50% chance that he has 
-
 ```
 
 ``` {r 1b quadratic approximations}
@@ -85,8 +83,8 @@ curve(dbeta(x, w + 1, n - w + 1), from = 0 , to = 1)
 curve(dnorm(x, 0.5, 0.2), lty = 2, add = TRUE)
 ```
 
-So from the plots and calculations seen above, we calculate that Riccardo has a 50% chance of having knowledge above chance (assuming that the questions is binary, and therefore chance will be at 50%).
-The results are the same for both quadratic approximation and the grid approximation.
+So from the plots and calculations seen above, we estimate that Riccardo has a 50% chance of having knowledge above chance (assuming that the questions are binary, and therefore chance will be at 50%).
+The results of the mean are the same for both quadratic approximation and the grid approximation, however, the curves are slightly different.
 
 2. Estimate all the teachers' knowledge of CogSci. Who's best? Use grid approximation. Comment on the posteriors of Riccardo and Mikkel.
 2a. Produce plots of the prior, and posterior for each teacher.
@@ -178,9 +176,9 @@ pretty_plot(Mikkel$grid, uniform_prior, Mikkel$likelihood, Mikkel$teacher_poster
 
 ```
 
-The posteriors of Riccardo and Mikkel are both centered around the mean of 0.5. However, as Mikkel have answered more questions, we are more certain that his actual knowledge of cogsci is around 0.5.
+The posteriors of Riccardo and Mikkel are both centered around the mean of 0.5. However, as Mikkel have answered more questions, we are more certain that his actual knowledge of cogsci is around 0.5, which is evident from the curve of his posterior probability being more narrow than the one for Riccardo.
 
-Regarding the question of who is best, it is depending on what you look at. If we look at who has answered the biggest procentage correct Kristian is the best, but when concerned with the small amout of data we will argue that Josh is the best since we have more answers, there is a bigger probability that it represents Joshs true knowledge. 
+To determine who has greater CogSci knowledge, we can assess the plots to indentify which posterior distribution has the maximum a posteriori closest to one. If using this criteria, Kristian has the greatest knowledge of CogSci. However, we also have to take into account the certainty of the curve which we determine from eyeballing the area under the curve. Therefore, the teacher with most knowledge is Josh.
 
 
 
@@ -216,7 +214,7 @@ pretty_plot(Mikkel_0.8$grid, sensibly_centered_at_0.8, Mikkel_0.8$likelihood, Mi
 
 ```
 
-The results change for all teachers. However, the degree of change varies due to amount of datapoints. Before, we saw that Mikkel and Riccardo had the same probability of knowledge but since Riccardo has fewer datapoints his posterior probability is more susceptable to change because of the prior. In this case it increases his posterior probability in a higher degree than Mikkel. The same applies to Kristian, again due to few datapoints. Josh's results are pretty consistent which seems intuitive since he answered more questions.
+The results change for all teachers. However, the degree of change varies due to the amount of data. Previously, the probability distributions of Mikkel's and Riccardo's knowledge were similar. However, since Riccardo has fewer datapoints his posterior probability is more susceptable to change because of the prior. In this case, it increases his posterior probability to a higher degree than Mikkel. The same applies to Kristian, again due to the few datapoints. Josh's results are consistent, which is sensible since he answered more questions.
 
 
 
@@ -259,15 +257,15 @@ pretty_plot(Mikkel_0.8$grid, sensibly_centered_at_0.8, Mikkel_0.8$likelihood, Mi
 
 
 ```
-
-Do you still see a difference between the results? Why?
-Yes, we do see some changes, however the distribution is less affected by the prior then previously (almost impossible to see in the data from Kristian and Josh). We also see that the distribution of the teachers who are further away from the assumed prior of 0.8 (Mikkel and Riccardo) are more influenced by the prior.
+After adding more data one can observe changes to the posterior. However, the posteriors are less affected by the prior than previously. For instance, this can be seen on the plots for Kristian and Josh. We also see that when the posteriors of the teachers are further away from the prior of 0.8 (Mikkel and Riccardo), they are more influenced by the prior.
 
 
 5. Imagine you're a skeptic and think your teachers do not know anything about CogSci, given the content of their classes. How would you operationalize that belief?
 
-If we assume the teachers know nothing, it would be reasonable to define the prior to neglect all data points above .5, so that we are entirely sure that there is no chance that a teacher is above .5 level. The code would look as follows:
-# prior <- ifelse(p_grid > 0.5 , 0 , 1)
+If we assume the teachers know nothing, it would be reasonable to define the prior to neglect all data points above .5, so that we are entirely sure that there is no chance that a teacher is above a .5 level. The code would look as follows:
+```{r}
+prior <- ifelse(p_grid > 0.5 , 0 , 1)
+```
 
 
 
@@ -350,19 +348,9 @@ Last year you assessed the teachers (darned time runs quick!). Now you want to r
 Questions to be answered (but see guidance below):
 1- Write a paragraph discussing how assessment of prediction performance is different in Bayesian vs. frequentist models
 
-In frequentist models you could use a t-test and get a p-value telling you whether or not the means are significantly different from each other. In Bayesian models you instead get the estimate of how likely it is that the model has learned something. For this, we could calculate a new posterior using the previous posterior as the new prior.
+In frequentist models you could use a t-test to get a p-value indicating whether or not the means are significantly different. Contrarily, Bayesian models estimate how likely it is that the model has learned something. To check the model, one can apply predictive checks like running simulations or if new data is acquired, one can calculate a new posterior using the previous posterior as a prior.
 
 
-
-
-
-Could use HDPI and MAP (only get the highest point and that you're wrong and not how you're wrong) or the credibility interval or the mean and SD.
-the ones we will do: 
-1 using the information from previous years and see the difference 
-2 using post2020 - MAP(post2019)
-
-The information above 0 is the chance of him haing learned somthing, below is that he has forgotten somthing, done worse then last time.
-Sum(post2019[])
 
 2- Provide at least one plot and one written line discussing prediction errors for each of the teachers.
 
@@ -438,14 +426,14 @@ subtract_plot(Mikkel_2020$teacher_posterior - Mikkel_0.8$teacher_posterior, "Mik
 
 
 Riccardo:
-The posterior changed as we do not have a lot of data and and the proportion of correct responses is greater for the new data. This has the implication that the new posterior is slightly shifted towards 1 on the x axis. The distribution is still fairly narrow, meaning that we are most certain that Riccardo's cogsci knowledge is around chance (0.5).
+The posterior changed as we do not have a lot of data and the proportion of correct responses is greater for the new data. This has the implication that the new posterior is slightly shifted towards 1 on the x axis. The distribution is still fairly narrow, meaning that we are most certain that Riccardo's cogsci knowledge is around chance (0.5).
 
 Kristian:
-The updated posterior is shifted away from 1, meaning that the model has learned from the new data. This is due to the fact that Kristian only answered 2 questions (correctly) during the first trial and that the second trial had 12 questions - so the amount of data in the second trial is enough to update the posterior.
+The updated posterior is shifted away from 1, meaning that the model has learned from the new data. This is due to the fact that Kristian only answered 2 questions (both correctly) during the first trial and that the second trial had 12 questions - so the amount of data in the second trial is enough to update the posterior.
 
 Josh:
-The updated posterior is not changed, so the model has not learned from the new data. Josh answered a lot of questions during the first trial, so the amount of questions during the second trial was not enough to change the posterior. Also, the new data is fairly consisten with the old data.
+The updated posterior is almost identical to the old posterior (as can also be seen from the subtracted plot), so the model has not learned from the new data. Josh answered a lot of questions during the first trial, so the amount of questions during the second trial was not enough to change the posterior. Also, the new data is fairly consistent with the old data.
 
 Mikkel:
-The posterior for Mikkel has not changed. This is due to the amount of data for the second trial not being enough to change the posterior, as well as theproportion of correct responses in the second trial being somewhat consistent with the first trial.
+The posterior for Mikkel has only changed minimally. This is due to the amount of data for the second trial not being enough to change the posterior, as well as the proportion of correct responses in the second trial being somewhat consistent with the first trial.
 
