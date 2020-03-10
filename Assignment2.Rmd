@@ -437,3 +437,15 @@ subtract_plot(Mikkel_2020$teacher_posterior - Mikkel_0.8$teacher_posterior, "Mik
 ```
 
 
+Riccardo:
+The posterior changed as we do not have a lot of data and and the proportion of correct responses is greater for the new data. This has the implication that the new posterior is slightly shifted towards 1 on the x axis. The distribution is still fairly narrow, meaning that we are most certain that Riccardo's cogsci knowledge is around chance (0.5).
+
+Kristian:
+The updated posterior is shifted away from 1, meaning that the model has learned from the new data. This is due to the fact that Kristian only answered 2 questions (correctly) during the first trial and that the second trial had 12 questions - so the amount of data in the second trial is enough to update the posterior.
+
+Josh:
+The updated posterior is not changed, so the model has not learned from the new data. Josh answered a lot of questions during the first trial, so the amount of questions during the second trial was not enough to change the posterior. Also, the new data is fairly consisten with the old data.
+
+Mikkel:
+The posterior for Mikkel has not changed. This is due to the amount of data for the second trial not being enough to change the posterior, as well as theproportion of correct responses in the second trial being somewhat consistent with the first trial.
+
