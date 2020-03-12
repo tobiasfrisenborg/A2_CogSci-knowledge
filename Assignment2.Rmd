@@ -2,7 +2,9 @@
 title: "Computational Modeling - Assignment 2"
 author: "Josephine, Mie and Tobias"
 date: "29/01/2019"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -39,29 +41,32 @@ Questions:
 - Then implement a quadratic approximation (hint check paragraph 2.4.2!).
 - N.B. for the rest of the exercise just keep using the grid approximation (we'll move to quadratic approximations in two classes)
 
-``` {r 1a grid approximation}
+``` {r 1a grid approximation, echo=FALSE}
 
 ### Implement grid apporximation
-dens <- 20  # define density (number of points to calculate)
+dens <- 10000  # define density
+
 p_grid <- seq(from = 0, to = 1, length.out = dens)  # define grid
 prior <- rep(1, dens)  # define prior
-dens(rbinom(1e4, 6, runif(1e4, 0, 1)))  # test the prior, it looks reasonable
+#dens(rbinom(10000, 6, runif(10000, 0, 1))) # test the prior, it looks reasonable. The plot of the uniform prior. This is showing how likely the prior believes each outcome to be (0 - 6 correct answers). In this case the plot seems reasonable due to the fact that there is aproximately the same chance for each answer.
+
 likelihood <- dbinom(3, size = 6, prob = p_grid)  # compute likelihood at each value in grid
 unstd.posterior <- likelihood * prior  # compute product of likelihood and prio
-posterior <- unstd.posterior / sum(unstd.posterior)  # standardize the posterior, so it sums to 1 - this is equivalent to bayes theorem
+posterior <- unstd.posterior / sum(unstd.posterior)  # standardize the posterior, so it sums to 1
 
 # plot the posterior probability
 plot(p_grid, posterior,
      type = "b",
      xlab = "Probability of cogsci knowledge",
-     ylab = "Posterior probability")
+     ylab = "Density")
 
 # add up posterior probability where p < 0.5, this is equivalent to calculating the probability that Riccardo's knowledge is above chance
 sum(posterior[p_grid > 0.5])
 
 ```
 
-``` {r 1b quadratic approximations}
+
+``` {r 1b quadratic approximations, echo=FALSE}
 
 ### Implement quadratic apporximation
 cogsci_qa <- rethinking::map(
@@ -89,11 +94,11 @@ The results of the mean are the same for both quadratic approximation and the gr
 2. Estimate all the teachers' knowledge of CogSci. Who's best? Use grid approximation. Comment on the posteriors of Riccardo and Mikkel.
 2a. Produce plots of the prior, and posterior for each teacher.
 
-```{r functions}
+```{r functions, echo=FALSE}
 
 #Creating functions
 
-calc_teacher <- function(n_correct, n_question, prior, length_out = 100){
+calc_teacher <- function(n_correct, n_question, prior, length_out = 10000){
   # this function calculate the posterior
   p_grid <- seq(from = 0, to = 1, length.out = length_out)
   likelihood <- dbinom(n_correct, 
@@ -150,10 +155,10 @@ subtract_plot <- function(posterior, title = " "){
 }
 ```
 
-``` {r}
+``` {r, echo=FALSE}
 
 #Creating a uniform prior
-uniform_prior <- rep(1, 100)
+uniform_prior <- rep(1, 10000)
 
 ## Riccardo (3/6)
 Riccardo <- calc_teacher(3,6, uniform_prior)
@@ -178,18 +183,38 @@ pretty_plot(Mikkel$grid, uniform_prior, Mikkel$likelihood, Mikkel$teacher_poster
 
 The posteriors of Riccardo and Mikkel are both centered around the mean of 0.5. However, as Mikkel have answered more questions, we are more certain that his actual knowledge of cogsci is around 0.5, which is evident from the curve of his posterior probability being more narrow than the one for Riccardo.
 
-To determine who has greater CogSci knowledge, we can assess the plots to indentify which posterior distribution has the maximum a posteriori closest to one. If using this criteria, Kristian has the greatest knowledge of CogSci. However, we also have to take into account the certainty of the curve which we determine from eyeballing the area under the curve. Therefore, the teacher with most knowledge is Josh.
+```{r KT vs JS,echo=FALSE}
 
+JS_pos <- Josh$teacher_posterior/sum(Josh$teacher_posterior) 
+KT_pos <- Kristian$teacher_posterior/sum(Kristian$teacher_posterior)
+
+sam_JS <- sample(size = 1e7, x = p_grid, prob = JS_pos, replace = TRUE)
+mean(sam_JS)
+sd(sam_JS)
+
+sam_KT <- sample(size = 1e7, x = p_grid, prob = KT_pos, replace = TRUE)
+mean(sam_KT)
+sd(sam_KT)
+
+sum(sam_KT < sam_JS)/1e7 * 100
+
+# gives the % of how often Josh knows more then Kristian
+
+```
+
+
+To determine who has greater CogSci knowledge, we can assess the plots to indentify which posterior distribution has the maximum a posteriori closest to one. If using this criteria, Kristian has the greatest knowledge of CogSci. However, we also have to take into account the certainty of the model, which we determine from calculating and comparing the standard deviations. From this, the teacher with most knowledge is Josh since he has a SD = 0.03, whereas Kristian's distribution has a SD = 0.19.
+By sampling from the posterior distributions from Kristian and Josh, the model estimates that the probability of Josh being smarter than Kristian is 52.3%.
 
 
 3. Change the prior. Given your teachers have all CogSci jobs, you should start with a higher appreciation of their knowledge: the prior is a normal distribution with a mean of 0.8 and a standard deviation of 0.2. Do the results change (and if so how)?
 3a. Produce plots of the prior and posterior for each teacher.
 
 
-``` {r 3a}
+``` {r 3a, echo=FALSE}
 #creating a new prior 
 
-p_grid <- seq(from = 0, to = 1, length.out = 100)
+p_grid <- seq(from = 0, to = 1, length.out = 10000)
 sensibly_centered_at_0.8 <- dnorm(p_grid, 0.8, 0.2)
 
 # Riccardo (3 / 6)
@@ -220,10 +245,10 @@ The results change for all teachers. However, the degree of change varies due to
 
 4. You go back to your teachers and collect more data (multiply the previous numbers by 100). Calculate their knowledge with both a uniform prior and a normal prior with a mean of 0.8 and a standard deviation of 0.2. Do you still see a difference between the results? Why?
 
-``` {r 4}
+``` {r 4, echo=FALSE}
 # Riccardo (300 / 600)
-Riccardo <- calc_teacher(300,600, uniform_prior)
-pretty_plot(Riccardo$grid, uniform_prior, Riccardo$likelihood, Riccardo$teacher_posterior, title = "Riccardo uniform")
+Riccardox100 <- calc_teacher(300,600, uniform_prior)
+pretty_plot(Riccardox100$grid, uniform_prior, Riccardox100$likelihood, Riccardox100$teacher_posterior, title = "Riccardo uniform")
 
 Riccardo_0.8<- calc_teacher(300,600,sensibly_centered_at_0.8)
 pretty_plot(Riccardo_0.8$grid, sensibly_centered_at_0.8, Riccardo_0.8$likelihood, Riccardo_0.8$teacher_posterior, title = "Riccardo sensible")
@@ -231,8 +256,8 @@ pretty_plot(Riccardo_0.8$grid, sensibly_centered_at_0.8, Riccardo_0.8$likelihood
 
 
 ## Kristian (200/200)
-Kristian <- calc_teacher(200,200, uniform_prior)
-pretty_plot(Kristian$grid, uniform_prior, Kristian$likelihood, Kristian$teacher_posterior, title = "Kristian uniform")
+Kristianx100 <- calc_teacher(200,200, uniform_prior)
+pretty_plot(Kristianx100$grid, uniform_prior, Kristianx100$likelihood, Kristianx100$teacher_posterior, title = "Kristian uniform")
 
 Kristian_0.8<- calc_teacher(200,200,sensibly_centered_at_0.8)
 pretty_plot(Kristian_0.8$grid, sensibly_centered_at_0.8, Kristian_0.8$likelihood, Kristian_0.8$teacher_posterior, title = "Kristian sensible")
@@ -240,8 +265,8 @@ pretty_plot(Kristian_0.8$grid, sensibly_centered_at_0.8, Kristian_0.8$likelihood
 
 
 # Josh (16000 / 19800)
-Josh <- calc_teacher(16000,19800, uniform_prior)
-pretty_plot(Josh$grid, uniform_prior, Josh$likelihood, Josh$teacher_posterior, title = "Josh uniform")
+Joshx100 <- calc_teacher(16000,19800, uniform_prior)
+pretty_plot(Joshx100$grid, uniform_prior, Joshx100$likelihood, Joshx100$teacher_posterior, title = "Josh uniform")
 
 Josh_0.8<- calc_teacher(16000,19800,sensibly_centered_at_0.8)
 pretty_plot(Josh_0.8$grid, sensibly_centered_at_0.8, Josh_0.8$likelihood, Josh_0.8$teacher_posterior, title = "Josh sensible")
@@ -249,8 +274,8 @@ pretty_plot(Josh_0.8$grid, sensibly_centered_at_0.8, Josh_0.8$likelihood, Josh_0
 
 
 # Mikkel (6600 / 13200)
-Mikkel <- calc_teacher(6600,13200, uniform_prior)
-pretty_plot(Mikkel$grid, uniform_prior, Mikkel$likelihood, Mikkel$teacher_posterior, title = "Mikkel uniform")
+Mikkelx100 <- calc_teacher(6600,13200, uniform_prior)
+pretty_plot(Mikkelx100$grid, uniform_prior, Mikkelx100$likelihood, Mikkelx100$teacher_posterior, title = "Mikkel uniform")
 
 Mikkel_0.8<- calc_teacher(6600,13200,sensibly_centered_at_0.8)
 pretty_plot(Mikkel_0.8$grid, sensibly_centered_at_0.8, Mikkel_0.8$likelihood, Mikkel_0.8$teacher_posterior, title = "Mikkel sensible")
@@ -262,9 +287,10 @@ After adding more data one can observe changes to the posterior. However, the po
 
 5. Imagine you're a skeptic and think your teachers do not know anything about CogSci, given the content of their classes. How would you operationalize that belief?
 
-If we assume the teachers know nothing, it would be reasonable to define the prior to neglect all data points above .5, so that we are entirely sure that there is no chance that a teacher is above a .5 level. The code would look as follows:
+If we assume the teachers know nothing, we thereby would expect their knowledge to be at chance level at 0.5 with a standard deviation for instance at 0.2.
+The code would look as follows:
 ```{r}
-prior <- ifelse(p_grid > 0.5 , 0 , 1)
+prior <- dnorm(p_grid, 0.5, 0.2)
 ```
 
 
@@ -273,68 +299,68 @@ prior <- ifelse(p_grid > 0.5 , 0 , 1)
 6. Optional question: Can you estimate the difference between Riccardo's estimated knowledge and that of each of the other teachers? Would you deem it credible (that is, would you believe that it is actually different)?
 
 7. Bonus knowledge: all the stuff we have done can be implemented in a lme4-like fashion using the brms package. Here is an example.
-```{r}
-library(brms)
-
-d <- data.frame(
-  Correct=c(3,2,160,66),
-  Questions=c(6,2,198,132),
-  Teacher=c("RF","KT","JS","MW"))
-
-# Model sampling only from the prior (for checking the predictions your prior leads to)
-FlatModel_priorCheck <- brm(Correct|trials(Questions) ~ 1, 
-                 data = subset(d, Teacher=="RF"),
-                 prior = prior("uniform(0,1)", class = "Intercept"),
-                 family = binomial,
-                 sample_prior = "only") # here we tell the model to ignore the data
-
-# Plotting the predictions of the model (prior only) against the actual data
-pp_check(FlatModel_priorCheck, nsamples = 100)
-
-# Model sampling by combining prior and likelihood
-FlatModel <- brm(Correct|trials(Questions) ~ 1, 
-                 data = subset(d, Teacher=="RF"),
-                 prior = prior("uniform(0,1)", class = "Intercept"),
-                 family = binomial,
-                 sample_prior = T)
-# Plotting the predictions of the model (prior + likelihood) against the actual data
-pp_check(FlatModel, nsamples = 100)
-
-# plotting the posteriors and the sampling process
-plot(FlatModel)
-
-
-PositiveModel_priorCheck <- brm(Correct|trials(Questions) ~ 1,
-                     data = subset(d, Teacher=="RF"),
-                     prior = prior("normal(0.8,0.2)", 
-                                   class = "Intercept"),
-                     family=binomial,
-                     sample_prior = "only")
-pp_check(PositiveModel_priorCheck, nsamples = 100)
-
-PositiveModel <- brm(Correct|trials(Questions) ~ 1,
-                     data = subset(d, Teacher=="RF"),
-                     prior = prior("normal(0.8,0.2)", 
-                                   class = "Intercept"),
-                     family=binomial,
-                     sample_prior = T)
-pp_check(PositiveModel, nsamples = 100)
-plot(PositiveModel)
-
-SkepticalModel_priorCheck <- brm(Correct|trials(Questions) ~ 1, 
-                      data = subset(d, Teacher=="RF"),
-                      prior=prior("normal(0.5,0.01)", class = "Intercept"),
-                      family=binomial,
-                      sample_prior = "only")
-pp_check(SkepticalModel_priorCheck, nsamples = 100)
-
-SkepticalModel <- brm(Correct|trials(Questions) ~ 1, 
-                      data = subset(d, Teacher=="RF"),
-                      prior = prior("normal(0.5,0.01)", class = "Intercept"),
-                      family = binomial,
-                      sample_prior = T)
-pp_check(SkepticalModel, nsamples = 100)
-plot(SkepticalModel)
+```{r, include=FALSE}
+# library(brms)
+# 
+# d <- data.frame(
+#   Correct=c(3,2,160,66),
+#   Questions=c(6,2,198,132),
+#   Teacher=c("RF","KT","JS","MW"))
+# 
+# # Model sampling only from the prior (for checking the predictions your prior leads to)
+# FlatModel_priorCheck <- brm(Correct|trials(Questions) ~ 1, 
+#                  data = subset(d, Teacher=="RF"),
+#                  prior = prior("uniform(0,1)", class = "Intercept"),
+#                  family = binomial,
+#                  sample_prior = "only") # here we tell the model to ignore the data
+# 
+# # Plotting the predictions of the model (prior only) against the actual data
+# pp_check(FlatModel_priorCheck, nsamples = 100)
+# 
+# # Model sampling by combining prior and likelihood
+# FlatModel <- brm(Correct|trials(Questions) ~ 1, 
+#                  data = subset(d, Teacher=="RF"),
+#                  prior = prior("uniform(0,1)", class = "Intercept"),
+#                  family = binomial,
+#                  sample_prior = T)
+# # Plotting the predictions of the model (prior + likelihood) against the actual data
+# pp_check(FlatModel, nsamples = 100)
+# 
+# # plotting the posteriors and the sampling process
+# plot(FlatModel)
+# 
+# 
+# PositiveModel_priorCheck <- brm(Correct|trials(Questions) ~ 1,
+#                      data = subset(d, Teacher=="RF"),
+#                      prior = prior("normal(0.8,0.2)", 
+#                                    class = "Intercept"),
+#                      family=binomial,
+#                      sample_prior = "only")
+# pp_check(PositiveModel_priorCheck, nsamples = 100)
+# 
+# PositiveModel <- brm(Correct|trials(Questions) ~ 1,
+#                      data = subset(d, Teacher=="RF"),
+#                      prior = prior("normal(0.8,0.2)", 
+#                                    class = "Intercept"),
+#                      family=binomial,
+#                      sample_prior = T)
+# pp_check(PositiveModel, nsamples = 100)
+# plot(PositiveModel)
+# 
+# SkepticalModel_priorCheck <- brm(Correct|trials(Questions) ~ 1, 
+#                       data = subset(d, Teacher=="RF"),
+#                       prior=prior("normal(0.5,0.01)", class = "Intercept"),
+#                       family=binomial,
+#                       sample_prior = "only")
+# pp_check(SkepticalModel_priorCheck, nsamples = 100)
+# 
+# SkepticalModel <- brm(Correct|trials(Questions) ~ 1, 
+#                       data = subset(d, Teacher=="RF"),
+#                       prior = prior("normal(0.5,0.01)", class = "Intercept"),
+#                       family = binomial,
+#                       sample_prior = T)
+# pp_check(SkepticalModel, nsamples = 100)
+# plot(SkepticalModel)
 ```
 
 If you dare, try to tweak the data and model to test two hypotheses:
@@ -348,7 +374,9 @@ Last year you assessed the teachers (darned time runs quick!). Now you want to r
 Questions to be answered (but see guidance below):
 1- Write a paragraph discussing how assessment of prediction performance is different in Bayesian vs. frequentist models
 
-In frequentist models you could use a t-test to get a p-value indicating whether or not the means are significantly different. Contrarily, Bayesian models estimate how likely it is that the model has learned something. To check the model, one can apply predictive checks like running simulations or if new data is acquired, one can calculate a new posterior using the previous posterior as a prior.
+In frequentist models you could use a Student's t-test, which assumes a Gaussian distribution, to get a p-value indicating whether or not the means are significantly different.
+
+Contrarily, Bayesian models estimate how likely it is that the model has learned something. To check the model, one can apply predictive checks like running simulations or if new data is acquired, one can calculate a new posterior using the previous posterior as a prior.
 
 
 
@@ -373,7 +401,7 @@ Guidance Tips
 3. Are the parameter estimates changing? (way 1)
 4. How does the new data look in last year's predictive posterior? (way 2)
 
-```{r}
+```{r, echo=FALSE}
 # New function for plotting old posterior and new posterior
 posterior_plot <- function(p_grid, prior, posterior, title = " "){
   # define data
